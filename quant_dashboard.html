@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>加密市场量化风控打分系统 (Macro · ETF · 币股 · 科技 · 均线)</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script>
+    if (typeof echarts === 'undefined') {
+      document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"><\/script>');
+    }
+  </script>
+  <script src="./quant_data.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0b0e14;
+      --bg-card: #131722;
+      --bg-elevated: #1c2230;
+      --border: #262e3d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --green: #00c087;
+      --red: #f6465d;
+      --blue: #58a6ff;
+      --yellow: #f0b90b;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 18px 24px 36px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1520px; margin: 0 auto; }
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 18px;
+    }
+    .title-group h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-pill {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-secondary); text-decoration: none; font-size: 12px;
+    }
+    .nav-pill:hover { color: var(--text-primary); border-color: var(--blue); }
+
+    .grid-top {
+      display: grid; grid-template-columns: 340px 1fr; gap: 16px; margin-bottom: 16px;
+    }
+    @media (max-width: 1024px) { .grid-top { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .score-hero { display: flex; flex-direction: column; justify-content: space-between; }
+    .score-big { font-size: 52px; font-weight: 800; line-height: 1.1; margin: 6px 0; }
+    .pos-badge {
+      display: inline-block; padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      margin-top: 6px;
+    }
+    .sub-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .sub-box {
+      background: var(--bg-elevated); border-radius: 8px; padding: 8px 10px; text-align: center;
+    }
+    .sub-box .lbl { font-size: 11px; color: var(--text-secondary); }
+    .sub-box .val { font-size: 16px; font-weight: 700; margin-top: 2px; }
+
+    .alerts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .alerts-row { grid-template-columns: 1fr; } }
+    .alert-card {
+      border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); background: var(--bg-card);
+    }
+    .alert-card.active {
+      border-color: var(--red); background: rgba(246, 70, 93, 0.12);
+    }
+    .alert-card.ok {
+      border-color: rgba(0, 192, 135, 0.35); background: rgba(0, 192, 135, 0.06);
+    }
+    .alert-hdr { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 13px; }
+    .alert-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    .fed-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      background: var(--bg-elevated); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+    }
+    .fed-btn {
+      padding: 5px 11px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 12px;
+    }
+    .fed-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; }
+
+    .breakdown-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px;
+    }
+    .metric-item {
+      background: var(--bg-elevated); border-radius: 8px; padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .metric-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+    .metric-score { font-size: 18px; font-weight: 700; margin: 4px 0 2px; }
+    .metric-raw { font-size: 11px; color: var(--text-secondary); }
+    .bar-bg { height: 5px; background: #262e3d; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+
+    .chart-box { width: 100%; height: 420px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+    th { color: var(--text-secondary); font-weight: 600; font-size: 12px; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 11px; font-weight: 600;
+    }
+    .tag-up { background: rgba(0,192,135,0.16); color: var(--green); }
+    .tag-mid { background: rgba(240,185,11,0.16); color: var(--yellow); }
+    .tag-dn { background: rgba(246,70,93,0.16); color: var(--red); }
+    .grp-pill { font-size: 11px; color: var(--text-secondary); background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px; }
+    .pos-txt { color: var(--green); }
+    .neg-txt { color: var(--red); }
+    .warn-txt { color: var(--yellow); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="title-group">
+      <h1>📊 加密市场量化风控打分看板</h1>
+      <div class="subtitle" id="metaLine">数据加载中...</div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-pill" href="./index.html">BTC ETF 资金看板</a>
+      <a class="nav-pill" href="./credit_spreads.html">美国信用利差看板</a>
+    </div>
+  </header>
+
+  <!-- Fed 口风实时微调条 -->
+  <div class="fed-bar">
+    <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">🏛️ 美联储官员口风（手动修正，实时重算今日总分）：</span>
+    <div id="fedBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    <span id="fedNote" style="font-size:12px;color:var(--text-secondary);margin-left:auto;"></span>
+  </div>
+
+  <!-- 熔断警报灯 -->
+  <div class="alerts-row" id="alertsRow"></div>
+
+  <!-- 顶部总分 + 12项指标拆解 -->
+  <div class="grid-top">
+    <div class="card score-hero">
+      <div>
+        <div class="card-title">
+          <span>今日综合风控得分</span>
+          <span id="latestDateBadge">--</span>
+        </div>
+        <div class="score-big" id="totalScoreEl">--</div>
+        <div id="posBadgeEl" class="pos-badge">--</div>
+        <div id="posDescEl" style="font-size:12px;color:var(--text-secondary);margin-top:8px;"></div>
+      </div>
+      <div class="sub-bars">
+        <div class="sub-box"><div class="lbl">慢变量 (35)</div><div class="val" id="slowVal">--</div></div>
+        <div class="sub-box"><div class="lbl">快变量 (40)</div><div class="val" id="fastVal">--</div></div>
+        <div class="sub-box"><div class="lbl">技术面 (25)</div><div class="val" id="techVal">--</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>12 项核心因子实时拆解（慢变量 35 + 快变量 40 + 均线技术 25）</span>
+        <span style="font-size:11px;">颜色越绿越顺风，越红越警觉</span>
+      </div>
+      <div class="breakdown-grid" id="breakdownGrid"></div>
+    </div>
+  </div>
+
+  <!-- 2024 至今历史回测曲线 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">
+      <span>2024 至今历史打分回测 vs BTC 价格（验证大跌前是否提前降分预警）</span>
+      <span style="font-size:11px;color:var(--text-secondary);">支持底部滑块缩放区间</span>
+    </div>
+    <div id="backtestChart" class="chart-box"></div>
+  </div>
+
+  <!-- 11 标的均线监控矩阵 -->
+  <div class="card">
+    <div class="card-title">
+      <span>标的均线纪律矩阵（3 加密货币 + 5 币股 + 3 美股科技/半导体基准）</span>
+      <span style="font-size:11px;color:var(--text-secondary);">BMSB = 牛熊支撑带 (20W SMA & 21W EMA)</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>代码</th>
+            <th>名称 / 分类</th>
+            <th>最新价</th>
+            <th>1日涨跌</th>
+            <th>5日涨跌</th>
+            <th>偏离 20D 线</th>
+            <th>偏离 50D 线</th>
+            <th>牛熊支撑带 (BMSB)</th>
+            <th>偏离 200D 年线</th>
+          </tr>
+        </thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const D = window.QUANT_DATA;
+  if (!D) {
+    document.body.innerHTML = "<h2 style='padding:40px;color:#f6465d;'>未找到 quant_data.js，请先运行「一键更新量化打分.bat」生成数据。</h2>";
+    return;
+  }
+
+  const FED_LEVELS = [
+    { level: -2, label: "极鹰 (-2)", score: 0 },
+    { level: -1, label: "偏鹰 (-1)", score: 2 },
+    { level: 0,  label: "中性 (0)",  score: 4 },
+    { level: 1,  label: "偏鸽 (+1)", score: 6 },
+    { level: 2,  label: "极鸽 (+2)", score: 8 },
+  ];
+
+  let activeFedLevel = D.fed_stance ? Number(D.fed_stance.level || 0) : 0;
+
+  function scoreColor(ratio) {
+    if (ratio >= 0.7) return "var(--green)";
+    if (ratio >= 0.45) return "var(--blue)";
+    if (ratio >= 0.25) return "var(--yellow)";
+    return "var(--red)";
+  }
+
+  function fmtPct(v) {
+    if (v === null || v === undefined) return "--";
+    const sign = v > 0 ? "+" : "";
+    const cls = v > 0 ? "pos-txt" : (v < 0 ? "neg-txt" : "");
+    return `<span class="${cls}">${sign}${v.toFixed(2)}%</span>`;
+  }
+
+  function renderFedBar() {
+    const box = document.getElementById("fedBtns");
+    box.innerHTML = "";
+    FED_LEVELS.forEach(item => {
+      const btn = document.createElement("button");
+      btn.className = "fed-btn" + (item.level === activeFedLevel ? " active" : "");
+      btn.textContent = item.label;
+      btn.onclick = () => {
+        activeFedLevel = item.level;
+        renderFedBar();
+        renderAllDynamic();
+      };
+      box.appendChild(btn);
+    });
+    document.getElementById("fedNote").textContent =
+      D.fed_stance && D.fed_stance.note ? `备忘：${D.fed_stance.note} (可在 fed_stance.json 永久保存)` : "";
+  }
+
+  function renderAllDynamic() {
+    const lt = D.latest;
+    const origFedScore = lt.detail.fed;
+    const newFedScore = FED_LEVELS.find(x => x.level === activeFedLevel).score;
+    const deltaFed = newFedScore - origFedScore;
+
+    const slow = +(lt.slow + deltaFed).toFixed(2);
+    const fast = lt.fast;
+    const tech = lt.tech;
+    const total = +(slow + fast + tech).toFixed(1);
+
+    let rawCap = total >= 80 ? 100 : (total >= 60 ? 70 : (total >= 40 ? 40 : 20));
+    let cap = rawCap;
+    if (lt.breaker_a) cap = Math.min(cap, 30);
+    if (lt.breaker_b) cap = Math.min(cap, 50);
+
+    const totalEl = document.getElementById("totalScoreEl");
+    totalEl.textContent = total.toFixed(1);
+    totalEl.style.color = scoreColor(total / 100);
+
+    document.getElementById("latestDateBadge").textContent = lt.date;
+    document.getElementById("slowVal").textContent = `${slow.toFixed(1)} / 35`;
+    document.getElementById("fastVal").textContent = `${fast.toFixed(1)} / 40`;
+    document.getElementById("techVal").textContent = `${tech.toFixed(1)} / 25`;
+
+    const badge = document.getElementById("posBadgeEl");
+    let zoneTxt = "";
+    let bg = "";
+    if (cap <= 30) {
+      zoneTxt = `红灯防御 · 建议总仓位 ≤ ${cap}%`;
+      bg = "rgba(246,70,93,0.18);color:var(--red)";
+    } else if (cap <= 50) {
+      zoneTxt = `黄灯警戒 · 建议总仓位 ≤ ${cap}%`;
+      bg = "rgba(240,185,11,0.18);color:var(--yellow)";
+    } else if (cap <= 70) {
+      zoneTxt = `蓝灯偏多 · 建议总仓位 ≤ ${cap}%`;
+      bg = "rgba(88,166,255,0.18);color:var(--blue)";
+    } else {
+      zoneTxt = `绿灯顺风 · 建议总仓位 ≤ ${cap}%`;
+      bg = "rgba(0,192,135,0.18);color:var(--green)";
+    }
+    badge.textContent = zoneTxt;
+    badge.style = `background:${bg};`;
+
+    document.getElementById("posDescEl").textContent =
+      cap < rawCap
+        ? `注：按分数原对应上限为 ${rawCap}%，但因触发硬风控熔断，系统强制压低至 ≤ ${cap}%。`
+        : "未触发强制熔断，当前仓位上限由综合打分决定。";
+
+    // 熔断卡片
+    const alerts = [
+      {
+        title: "熔断 A：BTC 趋势破位",
+        active: lt.breaker_a,
+        okTxt: "正常 · 未连续3日跌破牛熊带/年线",
+        badTxt: "触发警报 · 连续≥3日跌破牛熊支撑带或200D年线，仓位强制 ≤30%",
+      },
+      {
+        title: "熔断 B：华尔街资金出逃",
+        active: lt.breaker_b,
+        okTxt: "正常 · 未出现破20D线且资金共振流出",
+        badTxt: "触发警报 · BTC破20D线且ETF流出/币股多数破位，仓位强制 ≤50%",
+      },
+      {
+        title: "熔断 C：IGV/SOXX 科技与 ETH 共振",
+        active: lt.breaker_c,
+        okTxt: "正常 · 成长科技(IGV/SOXX)与ETH未共振破位",
+        badTxt: "触发警报 · IGV或SOXX跌破20D/50D且ETH破20D线，警惕高Beta联动踩踏！",
+      },
+    ];
+    document.getElementById("alertsRow").innerHTML = alerts.map(a => `
+      <div class="alert-card ${a.active ? "active" : "ok"}">
+        <div class="alert-hdr">
+          <span>${a.active ? "🚨 " : "✅ "}${a.title}</span>
+          <span style="color:${a.active ? "var(--red)" : "var(--green)"}">${a.active ? "已触发" : "安全"}</span>
+        </div>
+        <div class="alert-desc">${a.active ? a.badTxt : a.okTxt}</div>
+      </div>
+    `).join("");
+
+    // 12项拆解
+    const r = lt.raw;
+    const dt = Object.assign({}, lt.detail, { fed: newFedScore });
+    const items = [
+      { name: "核心 CPI (3M折年)", val: dt.cpi, max: 10, raw: r.cpi_3m_ann !== null ? `3M折年 ${r.cpi_3m_ann}%` : "--" },
+      { name: "债市降息预期 (2Y-FFR)", val: dt.rate_exp, max: 10, raw: `利差 ${r.spread_2y_ff >= 0 ? "+" : ""}${r.spread_2y_ff}%` },
+      { name: "Fed 官员口风 (手动)", val: dt.fed, max: 8, raw: `当前档位 ${activeFedLevel >= 0 ? "+" : ""}${activeFedLevel}` },
+      { name: "高收益债利差 (HY OAS)", val: dt.hy_oas, max: 7, raw: `当前 ${r.hy_oas ?? "--"}%` },
+      { name: "BTC+ETH ETF 净流入", val: dt.etf, max: 12, raw: `5日 ${r.etf_5d}M | 10日 ${r.etf_10d}M` },
+      { name: "5大币股风向篮子", val: dt.crypto_stocks, max: 8, raw: `站上20D线 ${r.cs_above20} 只` },
+      { name: "美股科技 (QQQ/IGV/SOXX)", val: dt.us_tech, max: 8, raw: "纳指+软件+半导体均线" },
+      { name: "2Y/10Y 收益率斜率", val: dt.yield_vel, max: 6, raw: `14日均值变动 ${r.avg_y_chg_bp >= 0 ? "+" : ""}${r.avg_y_chg_bp} bp` },
+      { name: "美元净流动性 (4周)", val: dt.net_liq, max: 6, raw: `28日变动 ${r.nl_chg_b >= 0 ? "+" : ""}${r.nl_chg_b}B` },
+      { name: "BTC vs 20日线", val: dt.ma20, max: 8, raw: `20D均线 $${r.btc_20d ?? "--"}` },
+      { name: "BTC vs 牛熊支撑带", val: dt.bmsb, max: 10, raw: `带区间 $${r.btc_bmsb_lo ?? "--"} ~ $${r.btc_bmsb_hi ?? "--"}` },
+      { name: "BTC vs 200日年线", val: dt.ma200, max: 7, raw: `200D年线 $${r.btc_200d ?? "--"}` },
+    ];
+    document.getElementById("breakdownGrid").innerHTML = items.map(it => {
+      const pct = Math.max(0, Math.min(100, (it.val / it.max) * 100));
+      const col = scoreColor(it.val / it.max);
+      return `
+        <div class="metric-item">
+          <div class="metric-top"><span>${it.name}</span><span>满分 ${it.max}</span></div>
+          <div class="metric-score" style="color:${col}">${it.val.toFixed(1)}</div>
+          <div class="metric-raw">${it.raw}</div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        </div>`;
+    }).join("");
+  }
+
+  function renderMetaAndMatrix() {
+    document.getElementById("metaLine").textContent =
+      `最新数据日期：${D.latest_date} ｜ 更新时间：${D.updated_at} ｜ 覆盖 2024-01-11 至今共 ${D.history.length} 个交易日`;
+
+    const grpMap = { crypto: "加密货币", crypto_stock: "美股币股", us_tech: "美股成长/科技" };
+    document.getElementById("matrixBody").innerHTML = D.assets_matrix.map(a => {
+      const bmsbCls = a.bmsb_pos === "上方" ? "tag-up" : (a.bmsb_pos === "带内" ? "tag-mid" : "tag-dn");
+      return `
+        <tr>
+          <td style="font-weight:700;">${a.symbol}</td>
+          <td>${a.name} <span class="grp-pill">${grpMap[a.group] || a.group}</span></td>
+          <td style="font-weight:600;">$${a.price !== null ? a.price.toLocaleString() : "--"}</td>
+          <td>${fmtPct(a.chg_1d)}</td>
+          <td>${fmtPct(a.chg_5d)}</td>
+          <td>${fmtPct(a.vs_20d)}</td>
+          <td>${fmtPct(a.vs_50d)}</td>
+          <td><span class="tag ${bmsbCls}">${a.bmsb_pos}</span></td>
+          <td>${fmtPct(a.vs_200d)}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  function renderChart() {
+    const chart = echarts.init(document.getElementById("backtestChart"));
+    const dates = D.history.map(h => h.date);
+    const scores = D.history.map(h => h.total);
+    const btc = D.history.map(h => h.btc);
+
+    chart.setOption({
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#1c2230",
+        borderColor: "#262e3d",
+        textStyle: { color: "#e6edf3", fontSize: 12 },
+        formatter: params => {
+          const idx = params[0].dataIndex;
+          const h = D.history[idx];
+          return `<b>${h.date}</b><br/>
+            BTC 价格: <b>$${h.btc ? h.btc.toLocaleString() : "--"}</b><br/>
+            综合得分: <b>${h.total}</b> (慢${h.slow} / 快${h.fast} / 技${h.tech})<br/>
+            建议仓位上限: <b>≤ ${h.pos_cap}%</b>`;
+        }
+      },
+      legend: { data: ["综合量化得分 (左轴)", "BTC 收盘价 (右轴)"], textStyle: { color: "#8b949e" } },
+      grid: { left: 52, right: 64, top: 38, bottom: 60 },
+      dataZoom: [{ type: "inside", start: 0, end: 100 }, { type: "slider", height: 22, bottom: 12 }],
+      xAxis: { type: "category", data: dates, axisLabel: { color: "#8b949e" } },
+      yAxis: [
+        { type: "value", name: "打分 (0-100)", min: 0, max: 100, axisLabel: { color: "#8b949e" }, splitLine: { lineStyle: { color: "#1e2430" } } },
+        { type: "value", name: "BTC ($)", scale: true, axisLabel: { color: "#8b949e" }, splitLine: { show: false } }
+      ],
+      series: [
+        {
+          name: "综合量化得分 (左轴)", type: "line", yAxisIndex: 0, data: scores, showSymbol: false,
+          lineStyle: { width: 2, color: "#58a6ff" },
+          markLine: {
+            silent: true,
+            lineStyle: { type: "dashed", color: "#f6465d" },
+            data: [{ yAxis: 40, name: "防守警戒线" }, { yAxis: 60, lineStyle: { color: "#00c087" }, name: "偏多线" }]
+          }
+        },
+        {
+          name: "BTC 收盘价 (右轴)", type: "line", yAxisIndex: 1, data: btc, showSymbol: false,
+          lineStyle: { width: 2, color: "#f7931a" }
+        }
+      ]
+    });
+    window.addEventListener("resize", () => chart.resize());
+  }
+
+  renderFedBar();
+  renderAllDynamic();
+  renderMetaAndMatrix();
+  renderChart();
+})();
+</script>
+</body>
+</html>
