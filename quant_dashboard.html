@@ -39,6 +39,18 @@
       gap: 12px; margin-bottom: 18px;
     }
     .title-group h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .v2-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+      background: rgba(88, 166, 255, 0.16); color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.35);
+    }
+    .freshness-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+    }
+    .fresh-chip {
+      font-size: 11px; color: var(--text-secondary); background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px;
+    }
+    .fresh-chip b { color: var(--text-primary); font-weight: 600; }
     .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
     .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
     .nav-pill {
@@ -133,7 +145,7 @@
 <div class="container">
   <header>
     <div class="title-group">
-      <h1>📊 加密市场量化风控打分看板</h1>
+      <h1>📊 加密市场量化风控打分看板 <span class="v2-badge">V2 · 零未来函数 · 滞后防打脸</span></h1>
       <div class="subtitle" id="metaLine">数据加载中...</div>
     </div>
     <div class="nav-links">
@@ -144,10 +156,13 @@
 
   <!-- Fed 口风实时微调条 -->
   <div class="fed-bar">
-    <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">🏛️ 美联储官员口风（手动修正，实时重算今日总分）：</span>
+    <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">🏛️ 美联储官员口风（仅修正今日实时分，历史回测固定中性无泄露）：</span>
     <div id="fedBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     <span id="fedNote" style="font-size:12px;color:var(--text-secondary);margin-left:auto;"></span>
   </div>
+
+  <!-- 各数据源实际最新日期监控 -->
+  <div class="freshness-bar" id="freshnessBar"></div>
 
   <!-- 熔断警报灯 -->
   <div class="alerts-row" id="alertsRow"></div>
@@ -346,22 +361,27 @@
       </div>
     `).join("");
 
-    // 12项拆解
+    // 12项拆解 (V2 IC校准权重)
     const r = lt.raw;
+    const w = D.weights || {
+      rate_exp: 14, cpi: 8, fed: 8, hy_oas: 5,
+      etf: 15, crypto_stocks: 11, us_tech: 6, net_liq: 4, yield_vel: 4,
+      ma20: 9, bmsb: 9, ma200: 7
+    };
     const dt = Object.assign({}, lt.detail, { fed: newFedScore });
     const items = [
-      { name: "核心 CPI (3M折年)", val: dt.cpi, max: 10, raw: r.cpi_3m_ann !== null ? `3M折年 ${r.cpi_3m_ann}%` : "--" },
-      { name: "债市降息预期 (2Y-FFR)", val: dt.rate_exp, max: 10, raw: `利差 ${r.spread_2y_ff >= 0 ? "+" : ""}${r.spread_2y_ff}%` },
-      { name: "Fed 官员口风 (手动)", val: dt.fed, max: 8, raw: `当前档位 ${activeFedLevel >= 0 ? "+" : ""}${activeFedLevel}` },
-      { name: "高收益债利差 (HY OAS)", val: dt.hy_oas, max: 7, raw: `当前 ${r.hy_oas ?? "--"}%` },
-      { name: "BTC+ETH ETF 净流入", val: dt.etf, max: 12, raw: `5日 ${r.etf_5d}M | 10日 ${r.etf_10d}M` },
-      { name: "5大币股风向篮子", val: dt.crypto_stocks, max: 8, raw: `站上20D线 ${r.cs_above20} 只` },
-      { name: "美股科技 (QQQ/IGV/SOXX)", val: dt.us_tech, max: 8, raw: "纳指+软件+半导体均线" },
-      { name: "2Y/10Y 收益率斜率", val: dt.yield_vel, max: 6, raw: `14日均值变动 ${r.avg_y_chg_bp >= 0 ? "+" : ""}${r.avg_y_chg_bp} bp` },
-      { name: "美元净流动性 (4周)", val: dt.net_liq, max: 6, raw: `28日变动 ${r.nl_chg_b >= 0 ? "+" : ""}${r.nl_chg_b}B` },
-      { name: "BTC vs 20日线", val: dt.ma20, max: 8, raw: `20D均线 $${r.btc_20d ?? "--"}` },
-      { name: "BTC vs 牛熊支撑带", val: dt.bmsb, max: 10, raw: `带区间 $${r.btc_bmsb_lo ?? "--"} ~ $${r.btc_bmsb_hi ?? "--"}` },
-      { name: "BTC vs 200日年线", val: dt.ma200, max: 7, raw: `200D年线 $${r.btc_200d ?? "--"}` },
+      { name: "债市降息预期 (2Y-FFR)", val: dt.rate_exp, max: w.rate_exp, raw: `利差 ${r.spread_2y_ff >= 0 ? "+" : ""}${r.spread_2y_ff}%` },
+      { name: "核心 CPI (3M折年·滞后45D)", val: dt.cpi, max: w.cpi, raw: r.cpi_3m_ann !== null ? `3M折年 ${r.cpi_3m_ann}%` : "--" },
+      { name: "Fed 官员口风 (手动)", val: dt.fed, max: w.fed, raw: `当前档位 ${activeFedLevel >= 0 ? "+" : ""}${activeFedLevel}` },
+      { name: "高收益债利差 (HY OAS)", val: dt.hy_oas, max: w.hy_oas, raw: `当前 ${r.hy_oas ?? "--"}%` },
+      { name: "BTC+ETH ETF 净流入", val: dt.etf, max: w.etf, raw: `5日 ${r.etf_5d}M | 10日 ${r.etf_10d}M` },
+      { name: "5大币股风向篮子", val: dt.crypto_stocks, max: w.crypto_stocks, raw: `站上20D线 ${r.cs_above20} 只` },
+      { name: "美股科技 (QQQ/IGV/SOXX)", val: dt.us_tech, max: w.us_tech, raw: "纳指+软件+半导体均线" },
+      { name: "美元净流动性 (4周)", val: dt.net_liq, max: w.net_liq, raw: `28日变动 ${r.nl_chg_b >= 0 ? "+" : ""}${r.nl_chg_b}B` },
+      { name: "2Y/10Y 收益率斜率", val: dt.yield_vel, max: w.yield_vel, raw: `14日均值变动 ${r.avg_y_chg_bp >= 0 ? "+" : ""}${r.avg_y_chg_bp} bp` },
+      { name: "BTC vs 20日线", val: dt.ma20, max: w.ma20, raw: `20D均线 $${r.btc_20d ?? "--"}` },
+      { name: "BTC vs 牛熊支撑带", val: dt.bmsb, max: w.bmsb, raw: `因果带 $${r.btc_bmsb_lo ?? "--"} ~ $${r.btc_bmsb_hi ?? "--"}` },
+      { name: "BTC vs 200日年线", val: dt.ma200, max: w.ma200, raw: `200D年线 $${r.btc_200d ?? "--"}` },
     ];
     document.getElementById("breakdownGrid").innerHTML = items.map(it => {
       const pct = Math.max(0, Math.min(100, (it.val / it.max) * 100));
@@ -378,7 +398,13 @@
 
   function renderMetaAndMatrix() {
     document.getElementById("metaLine").textContent =
-      `最新数据日期：${D.latest_date} ｜ 更新时间：${D.updated_at} ｜ 覆盖 2024-01-11 至今共 ${D.history.length} 个交易日`;
+      `最新数据日期：${D.latest_date} ｜ 更新时间：${D.updated_at} ｜ 覆盖 2024-01-11 至今共 ${D.history.length} 个交易日（V${D.version || "2.0"}）`;
+
+    if (D.data_freshness && D.data_freshness.length) {
+      document.getElementById("freshnessBar").innerHTML = D.data_freshness.map(f =>
+        `<div class="fresh-chip" title="${f.note}">${f.source}：<b>${f.latest_date}</b></div>`
+      ).join("");
+    }
 
     const grpMap = { crypto: "加密货币", crypto_stock: "美股币股", us_tech: "美股成长/科技" };
     document.getElementById("matrixBody").innerHTML = D.assets_matrix.map(a => {
