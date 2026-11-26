@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>稳定币铸造/注销 · BTC ETF 资金流 · BTC 价格联动看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script>
+    if (typeof echarts === 'undefined') {
+      document.write('<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"><\/script>');
+    }
+  </script>
+  <script src="./stablecoin_etf_data.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0b0e14;
+      --bg-card: #131722;
+      --bg-elevated: #1c2230;
+      --border: #262e3d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --green: #00c087;
+      --red: #f6465d;
+      --blue: #58a6ff;
+      --btc: #f7931a;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 18px 24px 36px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1520px; margin: 0 auto; }
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 16px;
+    }
+    .title-group h1 { font-size: 21px; font-weight: 700; }
+    .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-pill {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-secondary); text-decoration: none; font-size: 12px;
+    }
+    .nav-pill:hover { color: var(--text-primary); border-color: var(--blue); }
+
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px;
+    }
+    .kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px;
+    }
+    .kpi-lbl { font-size: 12px; color: var(--text-secondary); }
+    .kpi-val { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
+    .kpi-sub { font-size: 11px; color: var(--text-secondary); }
+
+    .toolbar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 14px;
+    }
+    .btn-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .btn-label { font-size: 12px; color: var(--text-secondary); margin-right: 4px; }
+    .ctrl-btn {
+      padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; font-size: 12px;
+    }
+    .ctrl-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+    }
+    .card-hint { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+    .chart-lg { width: 100%; height: 340px; }
+    .chart-md { width: 100%; height: 290px; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="title-group">
+      <h1>💧 稳定币铸造/注销 · BTC 现货 ETF · BTC 价格联动观察看板</h1>
+      <div class="subtitle" id="metaLine">数据加载中...</div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-pill" href="./quant_dashboard.html">← 返回量化打分主看板</a>
+      <a class="nav-pill" href="./index.html">BTC ETF 细项看板</a>
+      <a class="nav-pill" href="./credit_spreads.html">美国信用利差看板</a>
+    </div>
+  </header>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="toolbar">
+    <div class="btn-group">
+      <span class="btn-label">滚动净流向窗口：</span>
+      <button class="ctrl-btn" data-win="7">7 日滚动</button>
+      <button class="ctrl-btn active" data-win="14">14 日滚动 (推荐)</button>
+      <button class="ctrl-btn" data-win="30">30 日滚动</button>
+    </div>
+    <div class="btn-group">
+      <span class="btn-label">时间区间：</span>
+      <button class="ctrl-btn" data-range="90">近 3 个月</button>
+      <button class="ctrl-btn" data-range="180">近 6 个月</button>
+      <button class="ctrl-btn" data-range="365">近 1 年</button>
+      <button class="ctrl-btn active" data-range="0">2024 至今全部</button>
+    </div>
+  </div>
+
+  <!-- 图1: 稳定币净铸造/注销 vs BTC 价格 -->
+  <div class="card">
+    <div class="card-title">
+      <span id="titleScFlow">1. 全网稳定币 14 日净铸造 / 注销 ($B) vs BTC 价格</span>
+      <span class="card-hint">绿柱 = 净铸造入场 ｜ 红柱 = 净注销抽血 ｜ 虚线 = -2B 加速注销警戒线（三图十字准线联动）</span>
+    </div>
+    <div id="chartScFlow" class="chart-lg"></div>
+  </div>
+
+  <!-- 图2: BTC 现货 ETF 滚动净流入 vs BTC 价格 -->
+  <div class="card">
+    <div class="card-title">
+      <span id="titleEtfFlow">2. 美国 BTC 现货 ETF 14 日累计净流入 ($M) vs BTC 价格</span>
+      <span class="card-hint">对比图 1：观察“华尔街 ETF 资金”与“场内稳定币资金”谁先见顶、谁先出逃、是否共振双杀</span>
+    </div>
+    <div id="chartEtfFlow" class="chart-md"></div>
+  </div>
+
+  <!-- 图3: 稳定币总市值 & ETF 累计净流入 vs BTC 价格 -->
+  <div class="card">
+    <div class="card-title">
+      <span>3. 宏观水位总览：稳定币总市值 ($B) vs BTC 价格</span>
+      <span class="card-hint">大周期水位对比：币价与稳定币总市值是否出现顶背离 / 底背离</span>
+    </div>
+    <div id="chartMcap" class="chart-md"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const D = window.STABLECOIN_ETF_DATA;
+  if (!D) {
+    document.body.innerHTML = "<h2 style='padding:40px;color:#f6465d;'>未找到 stablecoin_etf_data.js，请先运行 update_stablecoin_etf.py</h2>";
+    return;
+  }
+
+  let curWin = 14;
+  let curRange = 0;
+
+  const c1 = echarts.init(document.getElementById("chartScFlow"));
+  const c2 = echarts.init(document.getElementById("chartEtfFlow"));
+  const c3 = echarts.init(document.getElementById("chartMcap"));
+  echarts.connect([c1, c2, c3]);
+
+  function fmtSigned(v, unit, digits = 2) {
+    if (v === null || v === undefined) return "--";
+    const s = v > 0 ? "+" : "";
+    const cls = v >= 0 ? "pos" : "neg";
+    return `<span class="${cls}">${s}${v.toFixed(digits)}${unit}</span>`;
+  }
+
+  function renderHeaderAndKpi() {
+    const lt = D.latest;
+    const f = D.freshness || {};
+    document.getElementById("metaLine").textContent =
+      `数据更新：${D.updated_at} ｜ BTC最新：${f.btc || "--"} ｜ 稳定币最新：${f.stablecoin || "--"} ｜ ETF最新：${f.etf || "--"}`;
+
+    const dualOutflow = (lt.sc_14d !== null && lt.sc_14d < 0) && (lt.etf_14d !== null && lt.etf_14d < 0);
+    const dualInflow = (lt.sc_14d !== null && lt.sc_14d > 0) && (lt.etf_14d !== null && lt.etf_14d > 0);
+    const statusHtml = dualOutflow
+      ? `<span class="neg">🚨 场内外资金共振流出</span>`
+      : (dualInflow ? `<span class="pos">✅ 场内外资金共振流入</span>` : `<span style="color:#f0b90b;">⚖️ 资金分歧</span>`);
+
+    document.getElementById("kpiGrid").innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-lbl">BTC 最新收盘价</div>
+        <div class="kpi-val" style="color:var(--btc)">$${lt.btc.toLocaleString()}</div>
+        <div class="kpi-sub">日期：${lt.date}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">全网稳定币总市值 (USD)</div>
+        <div class="kpi-val">$${lt.sc_mcap !== null ? lt.sc_mcap.toFixed(2) : "--"}B</div>
+        <div class="kpi-sub">7D: ${fmtSigned(lt.sc_7d, "B")} ｜ 30D: ${fmtSigned(lt.sc_30d, "B")}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">稳定币 14 日净铸造 / 注销</div>
+        <div class="kpi-val">${fmtSigned(lt.sc_14d, "B")}</div>
+        <div class="kpi-sub">警戒线：14D ≤ -2.0B 为加速注销</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">BTC 现货 ETF 14 日累计流向</div>
+        <div class="kpi-val">${fmtSigned(lt.etf_14d, "M", 1)}</div>
+        <div class="kpi-sub">7D: ${fmtSigned(lt.etf_7d, "M", 1)} ｜ 30D: ${fmtSigned(lt.etf_30d, "M", 1)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">14D 资金共振状态</div>
+        <div class="kpi-val" style="font-size:17px;margin-top:8px;">${statusHtml}</div>
+        <div class="kpi-sub">稳定币(场内) × 现货ETF(华尔街)</div>
+      </div>
+    `;
+  }
+
+  function renderCharts() {
+    const all = D.records;
+    const rows = curRange > 0 ? all.slice(-curRange) : all;
+    const dates = rows.map(r => r.date);
+    const btc = rows.map(r => r.btc);
+    const scMcap = rows.map(r => r.sc_mcap);
+
+    const scKey = `sc_${curWin}d`;
+    const etfKey = `etf_${curWin}d`;
+    const scFlow = rows.map(r => r[scKey]);
+    const etfFlow = rows.map(r => r[etfKey]);
+
+    document.getElementById("titleScFlow").textContent = `1. 全网稳定币 ${curWin} 日净铸造 / 注销 ($B) vs BTC 价格`;
+    document.getElementById("titleEtfFlow").textContent = `2. 美国 BTC 现货 ETF ${curWin} 日累计净流入 ($M) vs BTC 价格`;
+
+    const commonTooltip = {
+      trigger: "axis",
+      axisPointer: { type: "cross" },
+      backgroundColor: "#1c2230",
+      borderColor: "#262e3d",
+      textStyle: { color: "#e6edf3", fontSize: 12 }
+    };
+
+    // 图 1
+    c1.setOption({
+      backgroundColor: "transparent",
+      tooltip: commonTooltip,
+      legend: { data: [`稳定币 ${curWin}D 净变动 ($B)`, "BTC 价格 ($)"], textStyle: { color: "#8b949e" } },
+      grid: { left: 58, right: 68, top: 36, bottom: 52 },
+      dataZoom: [{ type: "inside" }, { type: "slider", height: 20, bottom: 8 }],
+      xAxis: { type: "category", data: dates, axisLabel: { color: "#8b949e" } },
+      yAxis: [
+        { type: "value", name: "净变动 ($B)", axisLabel: { color: "#8b949e" }, splitLine: { lineStyle: { color: "#1e2430" } } },
+        { type: "value", name: "BTC ($)", scale: true, axisLabel: { color: "#8b949e" }, splitLine: { show: false } }
+      ],
+      series: [
+        {
+          name: `稳定币 ${curWin}D 净变动 ($B)`,
+          type: "bar",
+          yAxisIndex: 0,
+          data: scFlow.map(v => ({
+            value: v,
+            itemStyle: { color: v !== null && v >= 0 ? "rgba(0,192,135,0.72)" : "rgba(246,70,93,0.78)" }
+          })),
+          markLine: {
+            silent: true,
+            symbol: "none",
+            lineStyle: { type: "dashed", color: "#f6465d", width: 1.5 },
+            data: [{ yAxis: -2, name: "-2B 加速注销线" }]
+          }
+        },
+        {
+          name: "BTC 价格 ($)",
+          type: "line",
+          yAxisIndex: 1,
+          data: btc,
+          showSymbol: false,
+          lineStyle: { width: 2, color: "#f7931a" }
+        }
+      ]
+    }, true);
+
+    // 图 2
+    c2.setOption({
+      backgroundColor: "transparent",
+      tooltip: commonTooltip,
+      legend: { data: [`BTC ETF ${curWin}D 累计净流入 ($M)`, "BTC 价格 ($)"], textStyle: { color: "#8b949e" } },
+      grid: { left: 58, right: 68, top: 34, bottom: 34 },
+      xAxis: { type: "category", data: dates, axisLabel: { color: "#8b949e" } },
+      yAxis: [
+        { type: "value", name: "ETF ($M)", axisLabel: { color: "#8b949e" }, splitLine: { lineStyle: { color: "#1e2430" } } },
+        { type: "value", name: "BTC ($)", scale: true, axisLabel: { color: "#8b949e" }, splitLine: { show: false } }
+      ],
+      series: [
+        {
+          name: `BTC ETF ${curWin}D 累计净流入 ($M)`,
+          type: "bar",
+          yAxisIndex: 0,
+          data: etfFlow.map(v => ({
+            value: v,
+            itemStyle: { color: v !== null && v >= 0 ? "rgba(88,166,255,0.72)" : "rgba(246,70,93,0.78)" }
+          }))
+        },
+        {
+          name: "BTC 价格 ($)",
+          type: "line",
+          yAxisIndex: 1,
+          data: btc,
+          showSymbol: false,
+          lineStyle: { width: 2, color: "#f7931a" }
+        }
+      ]
+    }, true);
+
+    // 图 3
+    c3.setOption({
+      backgroundColor: "transparent",
+      tooltip: commonTooltip,
+      legend: { data: ["全网稳定币总市值 ($B)", "BTC 价格 ($)"], textStyle: { color: "#8b949e" } },
+      grid: { left: 58, right: 68, top: 34, bottom: 34 },
+      xAxis: { type: "category", data: dates, axisLabel: { color: "#8b949e" } },
+      yAxis: [
+        { type: "value", name: "总市值 ($B)", scale: true, axisLabel: { color: "#8b949e" }, splitLine: { lineStyle: { color: "#1e2430" } } },
+        { type: "value", name: "BTC ($)", scale: true, axisLabel: { color: "#8b949e" }, splitLine: { show: false } }
+      ],
+      series: [
+        {
+          name: "全网稳定币总市值 ($B)",
+          type: "line",
+          yAxisIndex: 0,
+          data: scMcap,
+          showSymbol: false,
+          areaStyle: { color: "rgba(163,113,247,0.14)" },
+          lineStyle: { width: 2, color: "#a371f7" }
+        },
+        {
+          name: "BTC 价格 ($)",
+          type: "line",
+          yAxisIndex: 1,
+          data: btc,
+          showSymbol: false,
+          lineStyle: { width: 2, color: "#f7931a" }
+        }
+      ]
+    }, true);
+  }
+
+  document.querySelectorAll("[data-win]").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("[data-win]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      curWin = Number(btn.dataset.win);
+      renderCharts();
+    };
+  });
+
+  document.querySelectorAll("[data-range]").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("[data-range]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      curRange = Number(btn.dataset.range);
+      renderCharts();
+    };
+  });
+
+  window.addEventListener("resize", () => { c1.resize(); c2.resize(); c3.resize(); });
+
+  renderHeaderAndKpi();
+  renderCharts();
+})();
+</script>
+</body>
+</html>
