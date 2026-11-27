@@ -1,7 +1,7 @@
 {
   "version": "2.0",
-  "updated_at": "2026-11-26 22:30:06",
-  "latest_date": "2026-11-26",
+  "updated_at": "2026-11-27 08:55:33",
+  "latest_date": "2026-11-27",
   "weights": {
     "rate_exp": 14.0,
     "cpi": 8.0,
@@ -25,7 +25,7 @@
   "data_freshness": [
     {
       "source": "加密货币行情 (BTC/ETH/SOL)",
-      "latest_date": "2026-11-26",
+      "latest_date": "2026-11-27",
       "note": "Yahoo Finance 7x24"
     },
     {
@@ -60,13 +60,13 @@
     }
   ],
   "latest": {
-    "date": "2026-11-26",
-    "btc": 60520.6094,
-    "eth": 1695.14,
-    "sol": 71.14,
-    "total": 18.2,
+    "date": "2026-11-27",
+    "btc": 61662.5703,
+    "eth": 1729.23,
+    "sol": 73.23,
+    "total": 18.5,
     "slow": 8.47,
-    "fast": 9.75,
+    "fast": 10.04,
     "tech": 0.0,
     "hyst_tier": 20,
     "pos_cap": 20,
@@ -81,8 +81,8 @@
       "etf": 0.0,
       "crypto_stocks": 0.0,
       "us_tech": 3.0,
-      "net_liq": 3.05,
-      "yield_vel": 3.7,
+      "net_liq": 3.11,
+      "yield_vel": 3.93,
       "ma20": 0.0,
       "bmsb": 0.0,
       "ma200": 0.0
@@ -94,12 +94,12 @@
       "etf_5d": -2951.6,
       "etf_10d": -4105.1,
       "cs_above20": "0/5",
-      "avg_y_chg_bp": -21.0,
-      "nl_chg_b": 79.0,
-      "btc_20d": 65940.84,
-      "btc_bmsb_lo": 72952.69,
-      "btc_bmsb_hi": 73570.52,
-      "btc_200d": 71920.37
+      "avg_y_chg_bp": -24.5,
+      "nl_chg_b": 83.0,
+      "btc_20d": 65235.29,
+      "btc_bmsb_lo": 73056.5,
+      "btc_bmsb_hi": 73627.62,
+      "btc_200d": 71819.91
     }
   },
   "assets_matrix": [
@@ -107,46 +107,46 @@
       "symbol": "BTC-USD",
       "name": "Bitcoin",
       "group": "crypto",
-      "last_date": "2026-11-26",
-      "price": 60520.61,
-      "chg_1d": 0.24,
-      "chg_5d": 0.71,
-      "vs_20d": -8.22,
-      "vs_50d": -18.96,
-      "vs_200d": -15.85,
+      "last_date": "2026-11-27",
+      "price": 61662.57,
+      "chg_1d": 1.93,
+      "chg_5d": 0.82,
+      "vs_20d": -5.48,
+      "vs_50d": -16.98,
+      "vs_200d": -14.14,
       "bmsb_pos": "下方",
-      "sma20": 65940.84,
-      "sma200": 71920.37
+      "sma20": 65235.29,
+      "sma200": 71819.91
     },
     {
       "symbol": "ETH-USD",
       "name": "Ethereum",
       "group": "crypto",
-      "last_date": "2026-11-26",
-      "price": 1695.14,
-      "chg_1d": 0.26,
-      "chg_5d": 0.77,
-      "vs_20d": -8.65,
-      "vs_50d": -21.79,
-      "vs_200d": -19.65,
+      "last_date": "2026-11-27",
+      "price": 1729.23,
+      "chg_1d": 2.46,
+      "chg_5d": 0.47,
+      "vs_20d": -5.5,
+      "vs_50d": -19.66,
+      "vs_200d": -17.91,
       "bmsb_pos": "下方",
-      "sma20": 1855.56,
-      "sma200": 2109.66
+      "sma20": 1829.84,
+      "sma200": 2106.58
     },
     {
       "symbol": "SOL-USD",
       "name": "Solana",
       "group": "crypto",
-      "last_date": "2026-11-26",
-      "price": 71.14,
-      "chg_1d": 1.06,
-      "chg_5d": 1.32,
-      "vs_20d": -6.25,
-      "vs_50d": -22.06,
-      "vs_200d": -19.06,
+      "last_date": "2026-11-27",
+      "price": 73.23,
+      "chg_1d": 3.24,
+      "chg_5d": 3.77,
+      "vs_20d": -2.42,
+      "vs_50d": -19.13,
+      "vs_200d": -16.56,
       "bmsb_pos": "下方",
-      "sma20": 75.88,
-      "sma200": 87.89
+      "sma20": 75.05,
+      "sma200": 87.77
     },
     {
       "symbol": "MSTR",
@@ -45422,9 +45422,9 @@
     },
     {
       "date": "2026-11-26",
-      "btc": 60520.6094,
-      "eth": 1695.14,
-      "sol": 71.14,
+      "btc": 60494.7109,
+      "eth": 1687.7418,
+      "sol": 70.9328,
       "total": 20.2,
       "slow": 10.47,
       "fast": 9.75,
@@ -45457,10 +45457,53 @@
         "cs_above20": "0/5",
         "avg_y_chg_bp": -21.0,
         "nl_chg_b": 79.0,
-        "btc_20d": 65940.84,
-        "btc_bmsb_lo": 72952.69,
-        "btc_bmsb_hi": 73570.52,
-        "btc_200d": 71920.37
+        "btc_20d": 65939.54,
+        "btc_bmsb_lo": 72950.33,
+        "btc_bmsb_hi": 73569.23,
+        "btc_200d": 71920.24
+      }
+    },
+    {
+      "date": "2026-11-27",
+      "btc": 61662.5703,
+      "eth": 1729.23,
+      "sol": 73.23,
+      "total": 20.5,
+      "slow": 10.47,
+      "fast": 10.04,
+      "tech": 0.0,
+      "hyst_tier": 20,
+      "pos_cap": 20,
+      "breaker_a": true,
+      "breaker_b": true,
+      "breaker_c": true,
+      "detail": {
+        "rate_exp": 1.0,
+        "cpi": 2.62,
+        "fed": 4.0,
+        "hy_oas": 2.85,
+        "etf": 0.0,
+        "crypto_stocks": 0.0,
+        "us_tech": 3.0,
+        "net_liq": 3.11,
+        "yield_vel": 3.93,
+        "ma20": 0.0,
+        "bmsb": 0.0,
+        "ma200": 0.0
+      },
+      "raw": {
+        "cpi_3m_ann": 3.75,
+        "spread_2y_ff": 0.75,
+        "hy_oas": 3.72,
+        "etf_5d": -2951.6,
+        "etf_10d": -4105.1,
+        "cs_above20": "0/5",
+        "avg_y_chg_bp": -24.5,
+        "nl_chg_b": 83.0,
+        "btc_20d": 65235.29,
+        "btc_bmsb_lo": 73056.5,
+        "btc_bmsb_hi": 73627.62,
+        "btc_200d": 71819.91
       }
     }
   ]
